@@ -27,7 +27,7 @@ A browser-based desktop environment with an Elden Ring theme. Draggable windows,
 Nothing to install. Open the live demo link, or clone the repo and open `index.html` directly in a browser.
 
 ```bash
-git clone https://github.com/kyoske2/Web-OS.git
+git clone https://github.com/kyoske2/WebOS.git
 cd Web-OS
 open index.html   # or just double-click it
 ```
@@ -35,7 +35,7 @@ open index.html   # or just double-click it
 ## Project structure
 
 ```
-Web-OS/
+WebOS/
 ├── index.html
 ├── style.css
 ├── script.js
