@@ -2,7 +2,7 @@
 
 A browser-based desktop environment with an Elden Ring theme. Draggable windows, a working terminal, a file manager, and a few extra mechanics I added for fun (rune counter, stamina system). Built with plain HTML/CSS/JS, no frameworks.
 
-[Live demo](https://kyoske2.github.io/Web-OS/)
+[Live demo](https://kyoske2.github.io/WebOS/)
 
 ![screenshot](demo.gif)
 
