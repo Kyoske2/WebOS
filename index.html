@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WebOS Tarnished Edition</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="desktop">
+  <div class="desktop-icon" style="top:20px;left:20px" ondblclick="openApp('files')">
+    <div class="icon-img"><img src="img/icons/folder.webp" alt="Archive"></div>
+    <span>Archive</span>
+  </div>
+  <div class="desktop-icon" style="top:20px;left:120px" ondblclick="openApp('browser')">
+    <div class="icon-img"><img src="img/icons/browser.png" alt="Mirror"></div>
+    <span>Mirror</span>
+  </div>
+  <div class="desktop-icon" style="top:120px;left:20px" ondblclick="openApp('editor')">
+    <div class="icon-img"><img src="img/icons/editor.png" alt="Quill"></div>
+    <span>Quill</span>
+  </div>
+  <div class="desktop-icon" style="top:320px;left:20px" ondblclick="openApp('terminal')">
+    <div class="icon-img"><img src="img/icons/terminal.webp" alt="Incant"></div>
+    <span>Incant</span>
+  </div>
+  <div class="desktop-icon" style="top:220px;left:20px" ondblclick="openApp('calculator')">
+    <div class="icon-img"><img src="img/icons/calcul.png" alt="Compute"></div>
+    <span>Compute</span>
+  </div>
+  <div class="desktop-icon" style="top:120px;left:120px" ondblclick="openApp('status')">
+    <div class="icon-img"><img src="img/icons/status.png" alt="Status"></div>
+    <span>Status</span>
+  </div>
+</div>
+
+
+<div id="taskbar">
+  <div id="taskbar-start" onclick="toggleStart()">
+    <img src="img/icons/grace.webp" alt="Start">
+  </div>
+  <div id="taskbar-divider"></div>
+  <div id="taskbar-apps"></div>
+  <div id="taskbar-runes" style="display:flex;align-items:center;gap:4px;margin-right:8px">
+    <img src="img/icons/rune.png" alt="Rune" class="rune-icon">
+    <span id="rune-count">0</span>
+  </div>
+  <div id="taskbar-clock">--:--</div>
+</div>
+
+<div id="start-menu">
+  <div class="start-header">Grimoire</div>
+  <div class="start-app" onclick="openApp('files');closeStart()">
+    <img src="img/icons/folder.webp" class="start-app-icon" alt="Archive">Archive
+  </div>
+  <div class="start-app" onclick="openApp('browser');closeStart()">
+    <img src="img/icons/browser.png" class="start-app-icon" alt="Mirror">Mirror
+  </div>
+  <div class="start-app" onclick="openApp('editor');closeStart()">
+    <img src="img/icons/editor.png" class="start-app-icon" alt="Quill">Quill
+  </div>
+  <div class="start-app" onclick="openApp('terminal');closeStart()">
+    <img src="img/icons/terminal.webp" class="start-app-icon" alt="Incant">Incant
+  </div>
+  <div class="start-app" onclick="openApp('calculator');closeStart()">
+    <img src="img/icons/calcul.png" class="start-app-icon" alt="Compute">Compute
+  </div>
+  <div class="start-app" onclick="openApp('status');closeStart()">
+    <img src="img/icons/status.png" class="start-app-icon" alt="Status">Status
+  </div>
+</div>
+
+<div id="notif-area"></div>
+
+<div id="rickroll-overlay">
+  <div id="rickroll-msg">◊ Executing nevergiveup.exe ◊</div>
+  <iframe id="rick-iframe" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+  <button id="rickroll-close" onclick="closeRickRoll()">✕ Return to Lands Between</button>
+</div>
+<script src="script.js"></script>
+</body>
+</html>
