@@ -602,7 +602,7 @@ function removeVideoWallpaper() {
 
 
 // Stamina system
-const STAMINA_DURATION = 10 * 1000; // 10 seconds for testing, change to 4 * 60 * 60 * 1000 for real (4 hours)
+const STAMINA_DURATION = 60 * 1000; // 60 seconds for testing, change to 4 * 60 * 60 * 1000 for real (4 hours)
 let staminaWarningShown = false;
 let sessionStart = Date.now(); // changed from const to let
 
