@@ -676,10 +676,27 @@ body {
 .anthem-track-item {
   font-size: 11px; color: rgba(212,175,55,0.5); padding: 5px 8px;
   border-radius: 2px; cursor: pointer; transition: all 0.15s;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  display: flex; align-items: center; justify-content: space-between; gap: 4px;
 }
 .anthem-track-item:hover { background: rgba(212,175,55,0.07); color: rgba(212,175,55,0.8); }
 .anthem-track-item.active {
   color: #d4af37; background: rgba(212,175,55,0.1);
   border-left: 2px solid rgba(212,175,55,0.5);
 }
+.anthem-track-label {
+  flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.anthem-track-del {
+  flex-shrink: 0; background: none; border: none; color: rgba(212,175,55,0.25);
+  cursor: pointer; font-size: 10px; padding: 0 2px; opacity: 0; transition: opacity 0.15s;
+}
+.anthem-track-item:hover .anthem-track-del { opacity: 1; }
+.anthem-track-del:hover { color: rgba(200,60,60,0.7); }
+
+.anthem-upload-btn {
+  display: block; width: 100%; text-align: center; cursor: pointer;
+  padding: 6px 0; margin-top: 4px; border-radius: 2px; font-size: 11px;
+  color: rgba(212,175,55,0.4); border: 0.5px dashed rgba(212,175,55,0.2);
+  transition: all 0.15s; font-family: Georgia, serif;
+}
+.anthem-upload-btn:hover { color: rgba(212,175,55,0.7); border-color: rgba(212,175,55,0.4); background: rgba(212,175,55,0.05); }

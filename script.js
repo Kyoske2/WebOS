@@ -214,12 +214,11 @@ case 'status': return `
           <input type="range" class="anthem-slider" min="0" max="100" value="40" oninput="anthemSetVolume(this.value)">
           <span class="anthem-vol-label" style="font-size:14px">♫</span>
         </div>
-        <div class="anthem-tracklist">
-          <div class="anthem-track-item active" id="anthem-ti-0" onclick="anthemSelectTrack(0)">◆ Erdtree's Glow</div>
-          <div class="anthem-track-item" id="anthem-ti-1" onclick="anthemSelectTrack(1)">◇ Limgrave at Dawn</div>
-          <div class="anthem-track-item" id="anthem-ti-2" onclick="anthemSelectTrack(2)">◇ Night of the Black Knife</div>
-          <div class="anthem-track-item" id="anthem-ti-3" onclick="anthemSelectTrack(3)">◇ Grace's Embrace</div>
-        </div>
+        <div class="anthem-tracklist" id="anthem-tracklist"></div>
+        <label class="anthem-upload-btn">
+          ◇ Upload MP3
+          <input type="file" accept="audio/*" multiple onchange="anthemUpload(event)" style="display:none">
+        </label>
       </div>`;
     default: return '<div style="padding:20px;color:rgba(212,175,55,0.5)">Unknown grimoire.</div>';
   }
@@ -1033,13 +1032,13 @@ const anthemTracks = [
   { name: "Grace's Embrace",        freqs: [164.81, 207.65, 246.94, 329.63] }, // E3 Ab3 B3 E4 — peaceful
 ];
 
-const anthemRomanNums = ['I', 'II', 'III', 'IV'];
-let anthemAudioCtx  = null;
-let anthemNodes     = [];
-let anthemBellTimer = null;
+let anthemAudioCtx     = null;
+let anthemNodes        = [];
+let anthemBellTimer    = null;
+let anthemAudioEl      = null;   // HTML Audio for real MP3 tracks
 let anthemCurrentTrack = 0;
-let anthemPlaying   = false;
-let anthemVolume    = 0.4;
+let anthemPlaying      = false;
+let anthemVolume       = 0.4;
 
 function anthemGetCtx() {
   if (!anthemAudioCtx) {
@@ -1051,8 +1050,19 @@ function anthemGetCtx() {
 
 function anthemStartTrack(idx) {
   anthemStopAll();
-  const ctx   = anthemGetCtx();
   const track = anthemTracks[idx];
+
+  // Real audio file — use HTML Audio element
+  if (track.type === 'audio') {
+    anthemAudioEl = new Audio(track.src);
+    anthemAudioEl.loop   = true;
+    anthemAudioEl.volume = anthemVolume;
+    anthemAudioEl.play().catch(() => notify('♪ Anthem', 'Could not play track'));
+    return;
+  }
+
+  // Generated track — use Web Audio oscillators
+  const ctx = anthemGetCtx();
   const nodes = [];
 
   // Master output gain
@@ -1136,6 +1146,13 @@ function scheduleBell(ctx, track) {
 }
 
 function anthemStopAll() {
+  // Stop HTML Audio element
+  if (anthemAudioEl) {
+    anthemAudioEl.pause();
+    anthemAudioEl.src = '';
+    anthemAudioEl = null;
+  }
+  // Stop oscillator nodes
   if (anthemBellTimer) { clearTimeout(anthemBellTimer); anthemBellTimer = null; }
   anthemNodes.forEach(n => {
     try { if (n.gain) n.gain.setValueAtTime(0, anthemAudioCtx.currentTime); } catch(e) {}
@@ -1180,8 +1197,11 @@ function anthemSelectTrack(idx) {
 
 function anthemSetVolume(val) {
   anthemVolume = val / 100;
+  if (anthemAudioEl) {
+    anthemAudioEl.volume = anthemVolume;
+  }
   if (anthemNodes.length > 0 && anthemAudioCtx) {
-    const master = anthemNodes[0]; // first node is always master gain
+    const master = anthemNodes[0];
     master.gain.setTargetAtTime(anthemVolume * 0.38, anthemAudioCtx.currentTime, 0.08);
   }
 }
@@ -1195,17 +1215,50 @@ function updateAnthemUI() {
   const track   = anthemTracks[anthemCurrentTrack];
 
   if (nameEl)  nameEl.textContent  = track.name;
-  if (numEl)   numEl.textContent   = anthemRomanNums[anthemCurrentTrack] + ' / IV';
+  if (numEl)   numEl.textContent   = (anthemCurrentTrack + 1) + ' / ' + anthemTracks.length;
   if (playBtn) playBtn.textContent = anthemPlaying ? '⏸' : '▶';
   if (artRing) artRing.classList.toggle('playing', anthemPlaying);
   if (artNote) artNote.classList.toggle('pulsing', anthemPlaying);
 
-  // Update track list highlights
-  anthemTracks.forEach((_, i) => {
-    const el = document.getElementById('anthem-ti-' + i);
-    if (!el) return;
+  // Rebuild track list dynamically
+  const list = document.getElementById('anthem-tracklist');
+  if (!list) return;
+  list.innerHTML = anthemTracks.map((t, i) => {
     const isActive = i === anthemCurrentTrack;
-    el.classList.toggle('active', isActive);
-    el.textContent = (isActive ? '◆ ' : '◇ ') + anthemTracks[i].name;
+    const prefix   = t.type === 'audio' ? '♫' : (isActive ? '◆' : '◇');
+    const delBtn   = t.type === 'audio'
+      ? `<button class="anthem-track-del" onclick="event.stopPropagation();anthemRemoveTrack(${i})" title="Remove">✕</button>`
+      : '';
+    return `<div class="anthem-track-item${isActive ? ' active' : ''}" onclick="anthemSelectTrack(${i})">
+      <span class="anthem-track-label">${prefix} ${t.name}</span>${delBtn}
+    </div>`;
+  }).join('');
+}
+
+function anthemUpload(event) {
+  const files = Array.from(event.target.files);
+  if (!files.length) return;
+  files.forEach(file => {
+    const src  = URL.createObjectURL(file);
+    const name = file.name.replace(/\.[^/.]+$/, ''); // strip extension
+    anthemTracks.push({ type: 'audio', name, src });
   });
+  updateAnthemUI();
+  notify('♪ Anthem', files.length + ' track' + (files.length > 1 ? 's' : '') + ' added');
+  event.target.value = ''; // allow re-uploading same file
+  addRunes(5);
+}
+
+function anthemRemoveTrack(idx) {
+  if (anthemCurrentTrack === idx) {
+    anthemStopAll();
+    anthemPlaying = false;
+    anthemCurrentTrack = Math.max(0, idx - 1);
+  } else if (anthemCurrentTrack > idx) {
+    anthemCurrentTrack--;
+  }
+  const t = anthemTracks[idx];
+  if (t && t.src && t.src.startsWith('blob:')) URL.revokeObjectURL(t.src);
+  anthemTracks.splice(idx, 1);
+  updateAnthemUI();
 }
