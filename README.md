@@ -10,13 +10,16 @@ A browser-based desktop environment with an Elden Ring theme. Draggable windows,
 
 - Draggable, resizable windows (minimize/maximize/close all work)
 - Taskbar + Start menu
-- 6 apps:
+- 9 apps:
   - **Archive** – file manager with a small virtual file tree
-  - **Mirror** – internal "browser" with a few static pages
+  - **Mirror** – browser that loads real websites in an iframe, with a DuckDuckGo search bar and graceful fallback for sites that block embedding (Google, YouTube, etc.)
   - **Quill** – basic text editor
   - **Incant** – terminal with a handful of commands (`ls`, `pwd`, `date`, `whoami`, `neofetch`, `help`)
   - **Compute** – calculator
   - **Status** – character sheet style panel (see below)
+  - **Anthem** – ambient music player with 4 procedurally-generated Elden Ring-style tracks (Web Audio API, no files needed). Play/pause, skip, volume slider, and track list
+  - **Codex** – task manager. Add edicts, mark them fulfilled (awards runes), expunge completed ones. Tasks persist via `localStorage`
+  - **Seer** – live camera viewer using `getUserMedia`. Three filters (Natural, Ashen, Golden Age), capture to canvas, download the shot. Stream stops cleanly when the window closes
 - Wallpaper picker — presets, custom upload, or a looping video
 - Rune counter that goes up as you use the OS
 - Stamina bar that drains over a session and pops a "you died" style screen when it hits zero (nudges you to take a break)
@@ -54,9 +57,15 @@ The Status app pulls from a couple of `setInterval` loops — one tracks session
 
 The wallpaper picker uses `FileReader` to read an uploaded image as a data URL so it can be applied with zero backend involved. Video wallpaper is just a `<video>` element absolutely positioned behind everything else, muted and looping.
 
+**Anthem** generates all audio at runtime using the Web Audio API — layered sawtooth oscillators run through lowpass filters with slow LFO pitch modulation, a feedback delay loop for reverb depth, and random bell chimes scheduled on a timer. No audio files, no copyright issues.
+
+**Seer** requests camera access via `navigator.mediaDevices.getUserMedia`, mirrors the feed (selfie orientation), and on capture draws the current frame to a hidden `<canvas>` with the selected CSS filter baked in. The stream is explicitly stopped (`track.stop()`) when the window closes so the browser camera indicator turns off.
+
+**Mirror** now loads external URLs in a sandboxed `<iframe>`. Sites known to block embedding (Google, YouTube, etc.) are detected upfront and shown a fallback page with a direct "open in browser" link instead of a blank frame.
+
 ## AI usage
 
-I used Claude during development to help debug CSS issues (mostly background shorthand stomping on inline styles — that one got me a few times), fix some JS scoping bugs in the stamina system, and bounce ideas off of for new features. All code was reviewed and tested by me before going in. What's more, README.md was also organized by AI as well.
+I used Claude during development to help debug CSS issues (mostly background shorthand stomping on inline styles — that one got me a few times), fix some JS scoping bugs in the stamina system, music player, and bounce ideas off of for new features. All code was reviewed and tested by me before going in. What's more, README.md was also organized by AI as well.
 
 ## Notes
 
