@@ -17,7 +17,7 @@ A browser-based desktop environment with an Elden Ring theme. Draggable windows,
   - **Incant** – terminal with a handful of commands (`ls`, `pwd`, `date`, `whoami`, `neofetch`, `help`)
   - **Compute** – calculator
   - **Status** – character sheet style panel (see below)
-  - **Anthem** – ambient music player with 4 procedurally-generated Elden Ring-style tracks (Web Audio API, no files needed). Play/pause, skip, volume slider, and track list
+  - **Anthem** – ambient music player with 4 procedurally-generated Elden Ring-style tracks (Web Audio API, no files needed). Play/pause, skip, volume slider, and track list. You can add your own music and remove it if you want.
   - **Codex** – task manager. Add edicts, mark them fulfilled (awards runes), expunge completed ones. Tasks persist via `localStorage`
   - **Seer** – live camera viewer using `getUserMedia`. Three filters (Natural, Ashen, Golden Age), capture to canvas, download the shot. Stream stops cleanly when the window closes
 - Wallpaper picker — presets, custom upload, or a looping video
