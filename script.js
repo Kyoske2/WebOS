@@ -10,7 +10,10 @@ const apps = {
   editor:     { title: 'Quill',    icon: '✍️', w: 500, h: 380 },
   terminal:   { title: 'Incant',   icon: '⚔️', w: 480, h: 320 },
   calculator: { title: 'Compute',  icon: '🔢', w: 290, h: 430 },
-  status:     { title: 'Status',   icon: '❤️', w: 380, h: 340 }
+  status:     { title: 'Status',   icon: '❤️', w: 380, h: 340 },
+  anthem:     { title: 'Anthem',   icon: '♪',  w: 320, h: 460 },
+  codex:      { title: 'Codex',    icon: '📜', w: 460, h: 420 },
+  seer:       { title: 'Seer',     icon: '👁', w: 480, h: 430 }
 };
 
 function notify(title, msg) {
@@ -148,6 +151,76 @@ case 'status': return `
           </div>
         </div>
       </div>`;
+    case 'seer': return `
+      <div class="seer-wrap">
+        <div class="seer-viewport">
+          <video class="seer-video" id="seer-video" autoplay playsinline muted></video>
+          <div class="seer-corner tl"></div>
+          <div class="seer-corner tr"></div>
+          <div class="seer-corner bl"></div>
+          <div class="seer-corner br"></div>
+          <div class="seer-hud-status" id="seer-status">◌ Awakening vision...</div>
+          <div class="seer-error" id="seer-error">
+            <div style="font-size:15px;margin-bottom:6px">◆ Vision Denied</div>
+            <div style="font-size:11px;color:rgba(212,175,55,0.4)">Camera access was refused by the browser</div>
+          </div>
+        </div>
+        <canvas id="seer-canvas" style="display:none"></canvas>
+        <div class="seer-controls">
+          <div class="seer-filters">
+            <button class="seer-filter-btn active" data-filter="none" onclick="seerSetFilter('none')">Natural</button>
+            <button class="seer-filter-btn" data-filter="ashen" onclick="seerSetFilter('ashen')">Ashen</button>
+            <button class="seer-filter-btn" data-filter="golden" onclick="seerSetFilter('golden')">Golden Age</button>
+          </div>
+          <button class="seer-capture-btn" onclick="seerCapture()">◆ Capture Relic</button>
+        </div>
+        <div class="seer-preview-row" id="seer-preview-row">
+          <img class="seer-preview-thumb" id="seer-preview-thumb" src="" alt="">
+          <div class="seer-preview-info">
+            <div id="seer-preview-label" style="font-size:10px;color:rgba(212,175,55,0.4);margin-bottom:6px">Last captured relic</div>
+            <button class="seer-dl-btn" onclick="seerDownload()">↓ Save Relic</button>
+          </div>
+        </div>
+      </div>`;
+    case 'codex': return `
+      <div class="codex-wrap">
+        <div class="codex-add-row">
+          <input type="text" class="codex-input" id="codex-input" placeholder="Inscribe a new edict..." maxlength="120"
+            onkeydown="if(event.key==='Enter')codexAdd()">
+          <button class="codex-add-btn" onclick="codexAdd()">◆ Inscribe</button>
+        </div>
+        <div class="codex-list" id="codex-list"></div>
+        <div class="codex-footer" id="codex-footer">◇ No edicts recorded</div>
+      </div>`;
+    case 'anthem': return `
+      <div class="anthem-wrap">
+        <div class="anthem-art-ring" id="anthem-art-ring">
+          <div class="anthem-art-note" id="anthem-art-note">♪</div>
+          <div class="anthem-art-orbit"></div>
+          <div class="anthem-art-orbit anthem-orbit-2"></div>
+        </div>
+        <div class="anthem-info">
+          <div class="anthem-label">⋄ NOW PLAYING ⋄</div>
+          <div class="anthem-track-name" id="anthem-track-name">Erdtree's Glow</div>
+          <div class="anthem-track-num" id="anthem-track-num">I / IV</div>
+        </div>
+        <div class="anthem-controls">
+          <button class="anthem-btn" onclick="anthemPrev()" title="Previous">⏮</button>
+          <button class="anthem-btn anthem-play-btn" id="anthem-play-btn" onclick="anthemTogglePlay()">▶</button>
+          <button class="anthem-btn" onclick="anthemNext()" title="Next">⏭</button>
+        </div>
+        <div class="anthem-volume">
+          <span class="anthem-vol-label">♩</span>
+          <input type="range" class="anthem-slider" min="0" max="100" value="40" oninput="anthemSetVolume(this.value)">
+          <span class="anthem-vol-label" style="font-size:14px">♫</span>
+        </div>
+        <div class="anthem-tracklist">
+          <div class="anthem-track-item active" id="anthem-ti-0" onclick="anthemSelectTrack(0)">◆ Erdtree's Glow</div>
+          <div class="anthem-track-item" id="anthem-ti-1" onclick="anthemSelectTrack(1)">◇ Limgrave at Dawn</div>
+          <div class="anthem-track-item" id="anthem-ti-2" onclick="anthemSelectTrack(2)">◇ Night of the Black Knife</div>
+          <div class="anthem-track-item" id="anthem-ti-3" onclick="anthemSelectTrack(3)">◇ Grace's Embrace</div>
+        </div>
+      </div>`;
     default: return '<div style="padding:20px;color:rgba(212,175,55,0.5)">Unknown grimoire.</div>';
   }
 }
@@ -156,6 +229,9 @@ function initApp(id) {
   if(id==='files') renderFM('/');
   if(id==='browser') browserGo();
   if(id==='status') updateStatus();
+  if(id==='anthem') updateAnthemUI();
+  if(id==='codex') { codexLoad(); codexRender(); }
+  if(id==='seer') seerInit();
 }
 
 // File System
@@ -195,12 +271,18 @@ let browserHistory = ['grace://site'];
 let browserHistIdx = 0;
 const browserPages = {
   'grace://site': () => `<div class="browser-home">
-    <h1>◆ Grace Site ◆</h1><p>A place to rest and reflect.</p>
-    <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      ${[['grace://news','📜 Proclamations'],['grace://tome','📖 Tome'],['grace://lore','⚔️ Lore'],['grace://about','ℹ️ About']].map(([u,l])=>
+    <h1>◆ Grace Site ◆</h1>
+    <div class="browser-search-row">
+      <input id="browser-search-inp" class="browser-search-inp" placeholder="Search the Lands Between..." onkeydown="if(event.key==='Enter')browserSearch()">
+      <button class="browser-search-btn" onclick="browserSearch()">🔍</button>
+    </div>
+    <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      ${[['https://duckduckgo.com','🔍 DuckDuckGo'],['https://en.wikipedia.org','📖 Wikipedia'],['https://github.com','⚙ GitHub'],['grace://news','📜 Proclamations'],['grace://lore','⚔️ Lore'],['grace://about','ℹ️ About']].map(([u,l])=>
         `<div style="padding:8px;border-radius:3px;background:rgba(212,175,55,0.08);cursor:pointer;font-size:11px;color:#d4af37;border:0.5px solid rgba(212,175,55,0.2)" onclick="navBrowser('${u}')">${l}</div>`
       ).join('')}
-    </div></div>`,
+    </div>
+    <p style="margin-top:10px;font-size:10px;color:rgba(212,175,55,0.25);text-align:center">⚠ Sites like Google &amp; YouTube block embedding — use ↗ to open them directly</p>
+  </div>`,
   'grace://about': () => `<div><h1 style="font-size:18px;color:#d4af37;margin-bottom:8px">◆ About ◆</h1><p style="color:rgba(212,175,55,0.6);font-size:12px;line-height:1.6">WebOS Tarnished Edition - A browser-based OS themed around Elden Ring. Built entirely in HTML & JavaScript with zero frameworks.</p></div>`,
   'grace://lore': () => `<div><h1 style="font-size:18px;color:#d4af37;margin-bottom:8px">⚔️ Lore</h1><p style="color:rgba(212,175,55,0.6);font-size:12px;line-height:1.6">This system was cursed by the Tarnished to run infinitely. Type 'nevergiveup' in Incant to awaken forbidden power...</p></div>`,
   'grace://tome': () => `<div><h1 style="font-size:18px;color:#d4af37;margin-bottom:8px">📖 Tome</h1><p style="color:rgba(212,175,55,0.6);font-size:12px;line-height:1.6">• Drag windows by their gold bars<br>• Resize from bottom-right<br>• Collect runes as you explore<br>• Check your Status to see your might</p></div>`,
@@ -211,13 +293,63 @@ function navBrowser(url) {
   if(browserHistIdx<browserHistory.length-1) browserHistory=browserHistory.slice(0,browserHistIdx+1);
   browserHistory.push(url); browserHistIdx=browserHistory.length-1; renderBrowser(url);
 }
-function browserGo() { const url=(document.getElementById('browser-url')||{}).value||'grace://site'; navBrowser(url); }
+function browserGo() {
+  let url = ((document.getElementById('browser-url')||{}).value||'grace://site').trim();
+  // Auto-prepend https:// for bare domains like "google.com"
+  if (url && !url.startsWith('grace://') && !url.startsWith('http://') && !url.startsWith('https://') && url.includes('.')) {
+    url = 'https://' + url;
+    const inp = document.getElementById('browser-url');
+    if (inp) inp.value = url;
+  }
+  navBrowser(url);
+}
+function browserSearch() {
+  const inp = document.getElementById('browser-search-inp');
+  if (!inp || !inp.value.trim()) return;
+  const q = encodeURIComponent(inp.value.trim());
+  navBrowser('https://duckduckgo.com/?q=' + q);
+}
 function browserBack() { if(browserHistIdx>0){browserHistIdx--;const u=browserHistory[browserHistIdx];document.getElementById('browser-url').value=u;renderBrowser(u);} }
 function browserRefresh() { browserGo(); }
+function isRealUrl(url) {
+  return url.startsWith('http://') || url.startsWith('https://');
+}
+
 function renderBrowser(url) {
-  const c=document.getElementById('browser-content'); if(!c) return;
-  const gen=browserPages[url];
-  c.innerHTML=gen?gen():`<div style="text-align:center;padding:32px;color:rgba(212,175,55,0.4)">404 - Site not found</div>`;
+  const c = document.getElementById('browser-content');
+  if (!c) return;
+
+  if (isRealUrl(url)) {
+    const iframeId = 'bframe-' + Date.now();
+    const blocked = ['google.com','youtube.com','facebook.com','twitter.com','instagram.com','reddit.com','linkedin.com','bing.com','amazon.com'];
+    const isKnownBlocked = blocked.some(d => url.includes(d));
+
+    if (isKnownBlocked) {
+      c.innerHTML = `
+        <div class="browser-blocked">
+          <div class="browser-blocked-icon">🔒</div>
+          <div class="browser-blocked-title">Embedding refused</div>
+          <div class="browser-blocked-msg">This site does not allow opening inside another page.<br>Use the button below to visit it directly.</div>
+          <a class="browser-blocked-btn" href="${url}" target="_blank" rel="noopener noreferrer">↗ Open in your browser</a>
+        </div>`;
+      return;
+    }
+
+    c.innerHTML = `
+      <div class="browser-ext-bar">
+        <span class="browser-ext-note">If blank, this site blocks embedding</span>
+        <a class="browser-ext-link" href="${url}" target="_blank" rel="noopener noreferrer">↗ Open in browser</a>
+      </div>
+      <iframe id="${iframeId}" class="browser-iframe"
+        src="${url}"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+        referrerpolicy="no-referrer">
+      </iframe>`;
+    return;
+  }
+
+  const gen = browserPages[url];
+  c.innerHTML = gen ? gen() : `<div style="text-align:center;padding:32px;color:rgba(212,175,55,0.4)">404 — Site not found in the Lands Between</div>`;
 }
 
 // Editor
@@ -370,6 +502,7 @@ function focusWindow(id) {
 }
 function closeWindow(id) {
   if(!openWindows[id]) return;
+  if(id==='seer') seerCleanup();
   openWindows[id].el.remove(); delete openWindows[id];
   const btn=document.querySelector('.taskbar-btn[data-id="'+id+'"]'); if(btn) btn.remove();
   addRunes(2);
@@ -602,7 +735,7 @@ function removeVideoWallpaper() {
 
 
 // Stamina system
-const STAMINA_DURATION = 60 * 1000; // 60 seconds for testing, change to 4 * 60 * 60 * 1000 for real (4 hours)
+const STAMINA_DURATION = 60 * 1000; // 10 seconds for testing, change to 4 * 60 * 60 * 1000 for real (4 hours)
 let staminaWarningShown = false;
 let sessionStart = Date.now(); // changed from const to let
 
@@ -698,3 +831,381 @@ function restAtGrace() {
 }
 
 setInterval(updateStamina, 1000);
+
+
+// ── Seer Camera ──────────────────────────────────────────────────────────────
+
+let seerStream = null;
+let seerFilter = 'none';
+
+function seerInit() {
+  const video = document.getElementById('seer-video');
+  const errEl = document.getElementById('seer-error');
+  const statEl = document.getElementById('seer-status');
+  if (!video) return;
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    if (errEl) errEl.classList.add('visible');
+    if (statEl) statEl.textContent = '✕ Not supported';
+    return;
+  }
+
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
+    .then(stream => {
+      seerStream = stream;
+      video.srcObject = stream;
+      video.onloadedmetadata = () => {
+        video.play();
+        if (statEl) { statEl.textContent = '● LIVE'; statEl.classList.add('live'); }
+        notify('👁 Seer', 'Vision awakened');
+      };
+    })
+    .catch(() => {
+      if (errEl) errEl.classList.add('visible');
+      if (statEl) statEl.textContent = '✕ Vision denied';
+    });
+}
+
+function seerCleanup() {
+  if (seerStream) {
+    seerStream.getTracks().forEach(t => t.stop());
+    seerStream = null;
+  }
+}
+
+function seerCapture() {
+  const video  = document.getElementById('seer-video');
+  const canvas = document.getElementById('seer-canvas');
+  if (!video || !canvas || !video.videoWidth) {
+    notify('👁 Seer', 'No vision to capture'); return;
+  }
+
+  canvas.width  = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+
+  // Mirror to match preview (selfie orientation)
+  ctx.translate(canvas.width, 0);
+  ctx.scale(-1, 1);
+
+  // Apply selected filter
+  ctx.filter = seerFilterValue(seerFilter);
+  ctx.drawImage(video, 0, 0);
+
+  // Show preview row
+  const thumb = document.getElementById('seer-preview-thumb');
+  const row   = document.getElementById('seer-preview-row');
+  if (thumb) { thumb.src = canvas.toDataURL('image/png'); }
+  if (row)   { row.classList.add('visible'); }
+
+  addRunes(8);
+  notify('👁 Seer', 'Relic captured · +8 runes');
+}
+
+function seerFilterValue(f) {
+  if (f === 'ashen')  return 'grayscale(100%) contrast(1.1)';
+  if (f === 'golden') return 'sepia(85%) brightness(1.05) contrast(1.05)';
+  return 'none';
+}
+
+function seerSetFilter(f) {
+  seerFilter = f;
+  const video = document.getElementById('seer-video');
+  if (video) video.style.filter = seerFilterValue(f);
+  document.querySelectorAll('.seer-filter-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.filter === f);
+  });
+}
+
+function seerDownload() {
+  const canvas = document.getElementById('seer-canvas');
+  if (!canvas || !canvas.width) return;
+  const a = document.createElement('a');
+  a.download = 'relic-' + Date.now() + '.png';
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+  addRunes(3);
+  notify('👁 Seer', 'Relic saved');
+}
+
+
+// ── Codex Task Journal ───────────────────────────────────────────────────────
+
+const CODEX_KEY = 'webos-codex-tasks';
+let codexTasks  = []; // [{ id, text, done, createdAt }]
+
+function codexLoad() {
+  try {
+    const raw = localStorage.getItem(CODEX_KEY);
+    codexTasks = raw ? JSON.parse(raw) : [];
+  } catch(e) { codexTasks = []; }
+}
+
+function codexSave() {
+  try { localStorage.setItem(CODEX_KEY, JSON.stringify(codexTasks)); } catch(e) {}
+}
+
+function codexAdd() {
+  const input = document.getElementById('codex-input');
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) return;
+  codexTasks.push({ id: Date.now(), text, done: false, createdAt: Date.now() });
+  codexSave();
+  codexRender();
+  input.value = '';
+  input.focus();
+  addRunes(4);
+}
+
+function codexToggle(id) {
+  const task = codexTasks.find(t => t.id === id);
+  if (!task) return;
+  task.done = !task.done;
+  codexSave();
+  codexRender();
+  if (task.done) {
+    addRunes(10);
+    notify('◆ Codex', 'Edict fulfilled · +10 runes');
+  }
+}
+
+function codexDelete(id) {
+  codexTasks = codexTasks.filter(t => t.id !== id);
+  codexSave();
+  codexRender();
+}
+
+function codexClearDone() {
+  codexTasks = codexTasks.filter(t => !t.done);
+  codexSave();
+  codexRender();
+}
+
+function codexRender() {
+  const list   = document.getElementById('codex-list');
+  const footer = document.getElementById('codex-footer');
+  if (!list) return;
+
+  if (codexTasks.length === 0) {
+    list.innerHTML = '';
+    if (footer) footer.textContent = '◇ No edicts recorded';
+    return;
+  }
+
+  // Pending first, done below
+  const sorted = [
+    ...codexTasks.filter(t => !t.done),
+    ...codexTasks.filter(t =>  t.done),
+  ];
+
+  list.innerHTML = sorted.map(task => `
+    <div class="codex-item${task.done ? ' done' : ''}" data-id="${task.id}">
+      <button class="codex-check" onclick="codexToggle(${task.id})" title="${task.done ? 'Mark undone' : 'Mark fulfilled'}">
+        ${task.done ? '◆' : '◇'}
+      </button>
+      <span class="codex-text">${escapeHtml(task.text)}</span>
+      <button class="codex-del" onclick="codexDelete(${task.id})" title="Expunge">✕</button>
+    </div>
+  `).join('');
+
+  const total     = codexTasks.length;
+  const fulfilled = codexTasks.filter(t => t.done).length;
+  const pending   = total - fulfilled;
+
+  if (footer) {
+    footer.innerHTML = `◆ ${fulfilled} fulfilled &nbsp;·&nbsp; ◇ ${pending} pending` +
+      (fulfilled > 0 ? ` &nbsp;<button class="codex-clear-btn" onclick="codexClearDone()">Expunge fulfilled</button>` : '');
+  }
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+
+// ── Anthem Music Player ──────────────────────────────────────────────────────
+
+const anthemTracks = [
+  { name: "Erdtree's Glow",        freqs: [130.81, 196.00, 164.81, 261.63] }, // C3 G3 E3 C4 — warm major
+  { name: "Limgrave at Dawn",       freqs: [146.83, 174.61, 220.00, 293.66] }, // D3 F3 A3 D4 — melancholic minor
+  { name: "Night of the Black Knife", freqs: [123.47, 155.56, 185.00, 246.94] }, // B2 Eb3 Gb3 B3 — tense
+  { name: "Grace's Embrace",        freqs: [164.81, 207.65, 246.94, 329.63] }, // E3 Ab3 B3 E4 — peaceful
+];
+
+const anthemRomanNums = ['I', 'II', 'III', 'IV'];
+let anthemAudioCtx  = null;
+let anthemNodes     = [];
+let anthemBellTimer = null;
+let anthemCurrentTrack = 0;
+let anthemPlaying   = false;
+let anthemVolume    = 0.4;
+
+function anthemGetCtx() {
+  if (!anthemAudioCtx) {
+    anthemAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (anthemAudioCtx.state === 'suspended') anthemAudioCtx.resume();
+  return anthemAudioCtx;
+}
+
+function anthemStartTrack(idx) {
+  anthemStopAll();
+  const ctx   = anthemGetCtx();
+  const track = anthemTracks[idx];
+  const nodes = [];
+
+  // Master output gain
+  const master = ctx.createGain();
+  master.gain.setValueAtTime(0, ctx.currentTime);
+  master.gain.linearRampToValueAtTime(anthemVolume * 0.38, ctx.currentTime + 2.5);
+  master.connect(ctx.destination);
+  nodes.push(master);
+
+  // Pad layer — one filtered sawtooth oscillator per frequency
+  track.freqs.forEach((freq, i) => {
+    const osc    = ctx.createOscillator();
+    const filter = ctx.createBiquadFilter();
+    const gain   = ctx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    osc.detune.setValueAtTime((i % 3) * 4 - 4, ctx.currentTime); // subtle warmth
+
+    // Slow pitch LFO
+    const lfo     = ctx.createOscillator();
+    const lfoGain = ctx.createGain();
+    lfo.type = 'sine';
+    lfo.frequency.setValueAtTime(0.15 + i * 0.07, ctx.currentTime);
+    lfoGain.gain.setValueAtTime(1.5, ctx.currentTime);
+    lfo.connect(lfoGain);
+    lfoGain.connect(osc.detune);
+    lfo.start();
+
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(320 + i * 80, ctx.currentTime);
+    filter.Q.setValueAtTime(0.7, ctx.currentTime);
+
+    // Stagger volume so lower freqs are louder
+    gain.gain.setValueAtTime(0.28 - i * 0.04, ctx.currentTime);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(master);
+    osc.start();
+
+    nodes.push(osc, filter, gain, lfo, lfoGain);
+  });
+
+  // Reverb-ish tail via a short delay
+  const delay     = ctx.createDelay(0.6);
+  const delayGain = ctx.createGain();
+  delay.delayTime.setValueAtTime(0.42, ctx.currentTime);
+  delayGain.gain.setValueAtTime(0.18, ctx.currentTime);
+  master.connect(delay);
+  delay.connect(delayGain);
+  delayGain.connect(master);
+  nodes.push(delay, delayGain);
+
+  anthemNodes = nodes;
+
+  // Schedule random bell chimes
+  scheduleBell(ctx, track);
+}
+
+function scheduleBell(ctx, track) {
+  if (!anthemPlaying) return;
+  const now       = ctx.currentTime;
+  const bellFreqs = track.freqs.map(f => f * 2); // octave up
+  const freq      = bellFreqs[Math.floor(Math.random() * bellFreqs.length)];
+
+  const osc  = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(freq, now);
+  gain.gain.setValueAtTime(0, now);
+  gain.gain.linearRampToValueAtTime(anthemVolume * 0.12, now + 0.06);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 3.5);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(now);
+  osc.stop(now + 4);
+
+  const nextMs = 2800 + Math.random() * 7000;
+  anthemBellTimer = setTimeout(() => scheduleBell(anthemGetCtx(), track), nextMs);
+}
+
+function anthemStopAll() {
+  if (anthemBellTimer) { clearTimeout(anthemBellTimer); anthemBellTimer = null; }
+  anthemNodes.forEach(n => {
+    try { if (n.gain) n.gain.setValueAtTime(0, anthemAudioCtx.currentTime); } catch(e) {}
+    try { if (n.stop) n.stop(); } catch(e) {}
+    try { n.disconnect(); } catch(e) {}
+  });
+  anthemNodes = [];
+}
+
+function anthemTogglePlay() {
+  anthemPlaying = !anthemPlaying;
+  if (anthemPlaying) {
+    anthemStartTrack(anthemCurrentTrack);
+    addRunes(5);
+    notify('♪ Anthem', anthemTracks[anthemCurrentTrack].name);
+  } else {
+    anthemStopAll();
+  }
+  updateAnthemUI();
+}
+
+function anthemNext() {
+  anthemCurrentTrack = (anthemCurrentTrack + 1) % anthemTracks.length;
+  if (anthemPlaying) { anthemStartTrack(anthemCurrentTrack); notify('♪ Anthem', anthemTracks[anthemCurrentTrack].name); }
+  updateAnthemUI();
+  addRunes(2);
+}
+
+function anthemPrev() {
+  anthemCurrentTrack = (anthemCurrentTrack - 1 + anthemTracks.length) % anthemTracks.length;
+  if (anthemPlaying) { anthemStartTrack(anthemCurrentTrack); notify('♪ Anthem', anthemTracks[anthemCurrentTrack].name); }
+  updateAnthemUI();
+  addRunes(2);
+}
+
+function anthemSelectTrack(idx) {
+  anthemCurrentTrack = idx;
+  if (anthemPlaying) { anthemStartTrack(idx); notify('♪ Anthem', anthemTracks[idx].name); }
+  updateAnthemUI();
+  addRunes(2);
+}
+
+function anthemSetVolume(val) {
+  anthemVolume = val / 100;
+  if (anthemNodes.length > 0 && anthemAudioCtx) {
+    const master = anthemNodes[0]; // first node is always master gain
+    master.gain.setTargetAtTime(anthemVolume * 0.38, anthemAudioCtx.currentTime, 0.08);
+  }
+}
+
+function updateAnthemUI() {
+  const nameEl  = document.getElementById('anthem-track-name');
+  const numEl   = document.getElementById('anthem-track-num');
+  const playBtn = document.getElementById('anthem-play-btn');
+  const artRing = document.getElementById('anthem-art-ring');
+  const artNote = document.getElementById('anthem-art-note');
+  const track   = anthemTracks[anthemCurrentTrack];
+
+  if (nameEl)  nameEl.textContent  = track.name;
+  if (numEl)   numEl.textContent   = anthemRomanNums[anthemCurrentTrack] + ' / IV';
+  if (playBtn) playBtn.textContent = anthemPlaying ? '⏸' : '▶';
+  if (artRing) artRing.classList.toggle('playing', anthemPlaying);
+  if (artNote) artNote.classList.toggle('pulsing', anthemPlaying);
+
+  // Update track list highlights
+  anthemTracks.forEach((_, i) => {
+    const el = document.getElementById('anthem-ti-' + i);
+    if (!el) return;
+    const isActive = i === anthemCurrentTrack;
+    el.classList.toggle('active', isActive);
+    el.textContent = (isActive ? '◆ ' : '◇ ') + anthemTracks[i].name;
+  });
+}
