@@ -161,7 +161,7 @@ body {
 .window-body {
   flex: 1; min-height: 0;
   display: flex; flex-direction: column;
-  overflow: hidden; color: #c9a961;
+  overflow: auto; color: #c9a961;
   padding: 1px;
 }
 .resize-handle { 
